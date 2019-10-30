@@ -1,8 +1,15 @@
-from cppjieba_py import jieba 
+#!/usr/bin/env python
+# coding=utf-8
+'''
+@Author: ArlenCai
+@Date: 2019-10-30 13:06:27
+@LastEditTime: 2019-10-30 13:15:30
+'''
+from cppjiebadat_py import jieba 
 
 def main():
 
-    jieba_instance = jieba("cppjieba/dict/user.dict.utf8")
+    jieba_instance = jieba("cppjiebadat/dict/user.dict.utf8")
     seg_list = jieba_instance.cut("我来到北京清华大学")
     print("Full Mode: " + "/ ".join(seg_list))  # 全模式
 

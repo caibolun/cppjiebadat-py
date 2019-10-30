@@ -1,3 +1,10 @@
+#!/usr/bin/env python
+# coding=utf-8
+'''
+@Author: ArlenCai
+@Date: 2019-10-30 13:06:27
+@LastEditTime: 2019-10-30 13:20:23
+'''
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
 import sys
@@ -21,14 +28,14 @@ class get_pybind_include(object):
 
 ext_modules = [
     Extension(
-        'cppjieba_py',
-        ['src/main.cpp'],
+        'cppjiebadat_py',
+        ['src/main.cpp', "cppjiebadat/deps/limonp/Md5.cpp"],
         include_dirs=[
             # Path to pybind11 headers
             get_pybind_include(),
             get_pybind_include(user=True),
-            "cppjieba/include",
-            "cppjieba/deps"
+            "cppjiebadat/include",
+            "cppjiebadat/deps"
         ],
         language='c++'
     ),
@@ -92,12 +99,12 @@ class BuildExt(build_ext):
 
 
 setup(
-    name='cppjieba_py',
+    name='cppjiebadat_py',
     version=__version__,
     author='yeping zheng',
     author_email='fantasy614@gmail.com',
-    url='https://github.com/fantasy/cppjieba-py',
-    description='A python extension for cppjieba',
+    url='https://github.com/fantasy/cppjiebadat-py',
+    description='A python extension for cppjiebadat',
     long_description='',
     ext_modules=ext_modules,
     install_requires=['pybind11>=2.2'],
