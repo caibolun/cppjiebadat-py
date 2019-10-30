@@ -1,0 +1,7 @@
+SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR})
+
+ADD_EXECUTABLE(demo demo.cpp)
+TARGET_LINK_LIBRARIES(demo gtest limonp)
+ADD_EXECUTABLE(load_test load_test.cpp)
+TARGET_LINK_LIBRARIES(load_test gtest limonp)
+ADD_SUBDIRECTORY(unittest)
