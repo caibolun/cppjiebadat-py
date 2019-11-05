@@ -32,7 +32,7 @@ public:
     }; // enum UserWordWeightOption
 
     DictTrie(const string& dict_path, const string& user_dict_paths = "", const string & dat_cache_path = "",
-             UserWordWeightOption user_word_weight_opt = WordWeightMedian) {
+             UserWordWeightOption user_word_weight_opt = WordWeightMax) {
         Init(dict_path, user_dict_paths, dat_cache_path, user_word_weight_opt);
     }
 
@@ -128,7 +128,7 @@ private:
         }
 
         if (dat_.InitAttachDat(dat_cache_path, md5)) {
-            LoadUserDict(user_dict_paths, false); // for load user_dict_single_chinese_word_;
+            LoadUserDict(user_dict_paths, true); // for load user_dict_single_chinese_word_;
             return;
         }
 

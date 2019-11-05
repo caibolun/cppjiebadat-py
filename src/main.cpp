@@ -1,69 +1,151 @@
-/*
- * @Author: ArlenCai
- * @Date: 2019-10-30 13:06:27
- * @LastEditTime: 2019-10-30 20:28:41
- */
+#ifndef SITE_PACKAGE_PATH
+#define SITE_PACKAGE_PATH STR_VALUE(SITE_PACKAGE_PATH)
+#endif
 #include <pybind11/pybind11.h>
+#include <pybind11/complex.h>
 #include <pybind11/stl.h>
 #include "cppjieba/Jieba.hpp"
+#include "cppjieba/TextRankExtractor.hpp"
 #include <iostream>
 
 using namespace std;
 namespace py = pybind11;
 
-const string DICT_PATH = "cppjiebadat/dict/jieba.dict.utf8";
-const string HMM_PATH = "cppjiebadat/dict/hmm_model.utf8";
-const string IDF_PATH = "cppjiebadat/dict/idf.utf8";
-const string STOP_WORD_PATH = "cppjiebadat/dict/stop_words.utf8";
+using Word = cppjieba::Word;
 
-struct JiebaCpp
+using WordVector = vector<string>;
+
+using WordsTaged = vector<pair<string, string>>;
+
+struct Tokenizer
 {
-    cppjieba::Jieba jieba;
+    cppjieba::Jieba *jieba;
+    cppjieba::KeywordExtractor *keywordExtractor;
+    cppjieba::TextRankExtractor *textRankExtractor;
 
   public:
-    JiebaCpp(const string &USER_DICT_PATH) : jieba(DICT_PATH, HMM_PATH, USER_DICT_PATH, IDF_PATH, STOP_WORD_PATH){};
-    JiebaCpp(const string &DICT_PATH, const string &USER_DICT_PATH) : jieba(DICT_PATH, HMM_PATH, USER_DICT_PATH, IDF_PATH, STOP_WORD_PATH){};
-    JiebaCpp(const string &DICT_PATH, const string &HMM_PATH, const string &USER_DICT_PATH, const string &IDF_PATH, const string &STOP_WORD_PATH) : jieba(DICT_PATH, HMM_PATH, USER_DICT_PATH, IDF_PATH, STOP_WORD_PATH){};
-
-    vector<string> cut(string &text)
+    
+    void initialize(const string &main_dict, const string &hmm_path, const string &user_dict, const string &idf_path,const string &stop_word_path)
     {
-        vector<string> words;
-        jieba.Cut(text, words, true);
+        jieba = new cppjieba::Jieba(main_dict, hmm_path, user_dict, idf_path, stop_word_path);
+    };
+
+    vector<tuple<string, uint32_t, uint32_t>> tokenize(const string &sentence, const string &mode = "default", bool HMM = true)
+    {
+        vector<tuple<string, uint32_t, uint32_t>> result;
+        vector<Word> words;
+        if (mode.compare("default") == 0)
+        {
+            jieba->Cut(sentence, words, HMM);
+        }
+        else
+        {
+            jieba->CutForSearch(sentence, words, HMM);
+        }
+
+        vector<Word>::const_iterator it;
+        it = words.begin();
+        while (it != words.end())
+        {
+            result.push_back(make_tuple(it->word, it->unicode_offset, it->unicode_offset + it->unicode_length));
+            ++it;
+        }
+        return result;
+    };
+
+    WordVector lcut_internal(const string &sentence, bool cut_all = false, bool HMM = true)
+    {
+        WordVector words;
+        if (!cut_all)
+        {
+            jieba->Cut(sentence, words, HMM);
+        }
+        else
+        {
+            jieba->CutAll(sentence, words);
+        }
         return words;
     };
 
-    vector<string> cutForSearch(string &text)
+
+    WordVector lcut_for_search_internal(const string &sentence, bool HMM = true)
     {
-        vector<string> words;
-        jieba.CutForSearch(text, words, true);
+        WordVector words;
+        jieba->CutForSearch(sentence, words, HMM);
         return words;
     };
 
-    vector<pair<string, string>> tag(const string &sentence)
+    WordsTaged tag(const string &sentence)
     {
-        vector<pair<string, string> > words;
-        jieba.Tag(sentence, words);
+        WordsTaged words;
+        jieba->Tag(sentence, words);
         return words;
     };
 
-
-    /*
-    void InsertUserWord(std::string &word)
+    bool find(const string &word)
     {
-        jieba.InsertUserWord(word);
+        return jieba->Find(word);
     };
-    */
+
+    string lookup_tag(const string &word) const
+    {
+        return jieba->LookupTag(word);
+    };
+
+    // KeywordExtractor
+    void init_keyowrd_extractor(const string &idfPath,
+                              const string &stopWordPath)
+    {
+        keywordExtractor = new cppjieba::KeywordExtractor(jieba->GetDictTrie(), jieba->GetHMMModel(), idfPath, stopWordPath);
+    };
+    vector<string> extract_tags_no_weight(const string &sentence, size_t topK = 20)
+    {
+        vector<string> keywords;
+        keywordExtractor->Extract(sentence, keywords, topK);
+        return keywords;
+    };
+    vector<pair<string, double>> extract_tags_with_weight(const string &sentence, size_t topK = 20)
+    {
+        vector<pair<string, double>> keywords;
+        keywordExtractor->Extract(sentence, keywords, topK);
+        return keywords;
+    };
+    
+    //TextRankExtractor
+    void init_textrank_extractor(const string &stopWordPath)
+    {
+        textRankExtractor = new cppjieba::TextRankExtractor(jieba->GetDictTrie(), jieba->GetHMMModel(), stopWordPath);
+    };
+    vector<string> textrank_no_weight(const string &sentence, size_t topK = 20)
+    {
+        vector<string> keywords;
+        textRankExtractor->Extract(sentence, keywords, topK);
+        return keywords;
+    };
+    vector<pair<string, double>> textrank_with_weight(const string &sentence, size_t topK = 20)
+    {
+        vector<pair<string, double>> keywords;
+        textRankExtractor->Extract(sentence, keywords, topK);
+        return keywords;
+    };
 };
 
-PYBIND11_MODULE(cppjiebadat_py, m)
+PYBIND11_MODULE(libcppjiebadat, m)
 {
     m.doc() = "python extension for cppjiebadat"; // optional module docstring
 
-    py::class_<JiebaCpp>(m, "jieba")
-        .def(py::init<const string &>())
-        .def(py::init<const string &, const string &>())
-        .def(py::init<const string &, const string &, const string &, const string &, const string &>())
-        .def("cut", &JiebaCpp::cut)
-        .def("cut_for_search", &JiebaCpp::cutForSearch)
-        .def("tag", &JiebaCpp::tag);
+    py::class_<Tokenizer>(m, "cppjiebadat")
+        .def("_initialize", &Tokenizer::initialize)
+        .def("_lcut_internal", &Tokenizer::lcut_internal, py::arg("sentence"), py::arg("cut_all") = false, py::arg("HMM") = true)
+        .def("_lcut_for_search_internal", &Tokenizer::lcut_for_search_internal, py::arg("sentence"), py::arg("HMM") = true)
+        .def("_tag", &Tokenizer::tag, py::arg("sentence"))
+        .def("_tokenize", &Tokenizer::tokenize, py::arg("sentence"), py::arg("mode") = "default", py::arg("HMM") = true)
+        .def("_find", &Tokenizer::find)
+        .def("_lookup_tag", &Tokenizer::lookup_tag)
+        .def("_init_keyowrd_extractor", &Tokenizer::init_keyowrd_extractor)
+        .def("_extract_tags_no_weight", &Tokenizer::extract_tags_no_weight)
+        .def("_extract_tags_with_weight", &Tokenizer::extract_tags_with_weight)
+        .def("_init_textrank_extractor", &Tokenizer::init_textrank_extractor)
+        .def("_textrank_no_weight", &Tokenizer::textrank_no_weight)
+        .def("_textrank_with_weight", &Tokenizer::textrank_with_weight);
 }

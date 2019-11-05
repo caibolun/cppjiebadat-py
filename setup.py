@@ -1,17 +1,14 @@
-#!/usr/bin/env python
-# coding=utf-8
-'''
-@Author: ArlenCai
-@Date: 2019-10-30 13:06:27
-@LastEditTime: 2019-10-30 13:20:23
-'''
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
 import sys
 import setuptools
+import os
+import io
+
+from distutils.sysconfig import get_python_lib
+site_package_dir = get_python_lib() + os.path.sep
 
 __version__ = '0.0.1'
-
 
 class get_pybind_include(object):
     """Helper class to determine the pybind11 include path
@@ -28,8 +25,8 @@ class get_pybind_include(object):
 
 ext_modules = [
     Extension(
-        'cppjiebadat_py',
-        ['src/main.cpp', "cppjiebadat/deps/limonp/Md5.cpp"],
+        'libcppjiebadat',
+        ['src/main.cpp', 'cppjiebadat/deps/limonp/Md5.cpp'],
         include_dirs=[
             # Path to pybind11 headers
             get_pybind_include(),
@@ -62,9 +59,7 @@ def cpp_flag(compiler):
     """Return the -std=c++[11/14] compiler flag.
     The c++14 is prefered over c++11 (when it is available).
     """
-    if has_flag(compiler, '-std=c++14'):
-        return '-std=c++14'
-    elif has_flag(compiler, '-std=c++11'):
+    if has_flag(compiler, '-std=c++11'):
         return '-std=c++11'
     else:
         raise RuntimeError('Unsupported compiler -- at least C++11 support '
@@ -87,27 +82,60 @@ class BuildExt(build_ext):
         if ct == 'unix':
             opts.append('-DVERSION_INFO="%s"' %
                         self.distribution.get_version())
+            opts.append('-DSITE_PACKAGE_PATH="%s"' %
+                        site_package_dir)
             opts.append(cpp_flag(self.compiler))
             if has_flag(self.compiler, '-fvisibility=hidden'):
                 opts.append('-fvisibility=hidden')
         elif ct == 'msvc':
             opts.append('/DVERSION_INFO=\\"%s\\"' %
                         self.distribution.get_version())
+            opts.append('/DSITE_PACKAGE_PATH=\\"%s\\"' %
+                        site_package_dir)
         for ext in self.extensions:
             ext.extra_compile_args = opts
+        opts.append('-fpermissive')
         build_ext.build_extensions(self)
 
+install_requires = ['pybind11>=2.2']
+
+extras_require = {
+        'test': ['spec==1.4.1']
+    }
+
+if sys.version_info[0] <3:
+    extras_require["test"].append("pathlib2")
+
+classifiers = [
+    'License :: OSI Approved :: MIT License',
+    'Natural Language :: Chinese (Simplified)',
+    'Natural Language :: Chinese (Traditional)',
+    'Programming Language :: Python :: 2.7',
+    'Programming Language :: Python :: 3.4',
+    'Programming Language :: Python :: 3.5',
+    'Programming Language :: Python :: 3.6',
+    'Programming Language :: C++',
+    'Operating System :: Unix',
+    'Topic :: Text Processing :: Linguistic',
+    'Topic :: Software Development :: Libraries :: Python Modules'
+]
 
 setup(
     name='cppjiebadat_py',
     version=__version__,
-    author='yeping zheng',
-    author_email='fantasy614@gmail.com',
-    url='https://github.com/fantasy/cppjiebadat-py',
-    description='A python extension for cppjiebadat',
-    long_description='',
+    author='arlen cai',
+    url='https://git.code.oa.com/arlencai/cppjiebadat-py/',
+    description='python bindings of cppjiebadat',
+    long_description= io.open("README.md",'r', encoding="utf-8").read(),
+    classifiers = classifiers,
     ext_modules=ext_modules,
-    install_requires=['pybind11>=2.2'],
+    packages=['cppjiebadat_py','cppjiebadat_py.dict'],
+    package_data = {
+        'cppjiebadat_py.dict': ['*.utf8']
+     },
+    include_package_data=True,
+    install_requires=install_requires,
+    extras_require=extras_require,
     cmdclass={'build_ext': BuildExt},
     zip_safe=False,
 )
