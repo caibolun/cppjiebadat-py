@@ -43,3 +43,9 @@ print(", ".join(seg_list))
 	$ python setup.py build 
 	$ python setup.py install 
 	```
+
+* 线上机器安装
+
+以mmbizwxaimagelogic为例：
+
+LDSHARED="gcc -pthread -shared -B /home/qspace/data/mmbizwxaimagelogic/bkrpc_env/miniconda3/compiler_compat -L/home/qspace/data/mmbizwxaimagelogic/bkrpc_env/miniconda3/lib -Wl,-rpath=/home/qspace/data/mmbizwxaimagelogic/bkrpc_env/miniconda3/lib -Wl,--no-as-needed" python setup.py build
