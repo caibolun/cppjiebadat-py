@@ -8,7 +8,7 @@
 import os
 get_module_res = lambda *res: os.path.normpath(os.path.join(
                         os.getcwd(), os.path.dirname(__file__), *res))
-                        
+
 DEFAULT_DICT_NAME = "dict/jieba.dict.utf8";
 DEFAULT_HMM_NAME = "dict/hmm_model.utf8";
 DEFAULT_IDF_NAME = "dict/idf.utf8";
@@ -21,6 +21,7 @@ DEFAULT_DICT = None
 
 class Tokenizer(cppjiebadat):
     def __init__(self, dictionary=DEFAULT_DICT):
+        super().__init__()
         if dictionary == DEFAULT_DICT:
             self.dictionary = get_module_res(DEFAULT_DICT_NAME)
         else:
@@ -31,6 +32,9 @@ class Tokenizer(cppjiebadat):
         self.stop_word_path = get_module_res(DEFAULT_STOP_WORD_NAME)
         self.initialized = False
 
+    def __del__(self):
+        self._release()
+
     def initialize(self, dictionary=None):
         if dictionary:
             abs_path = _get_abs_path(dictionary)
@@ -38,12 +42,11 @@ class Tokenizer(cppjiebadat):
                 return
             else:
                 self.dictionary = abs_path
-                self.initialized = False
         else:
             abs_path = self.dictionary
         self._initialize(self.dictionary, self.hmm_path, self.userdict, self.idf_path, self.stop_word_path)
         self.initialized = True
-    
+
     def check_initialized(self):
         if not self.initialized:
             self.initialize()
@@ -51,11 +54,11 @@ class Tokenizer(cppjiebadat):
     def lcut(self, sentence, cut_all=False, HMM=True):
         self.check_initialized()
         return self._lcut_internal(sentence, cut_all, HMM)
-    
+
     def lcut_for_search(self, sentence, HMM=True):
         self.check_initialized()
         return self._lcut_for_search_internal(sentence, HMM)
-    
+
     def cut(self, *args, **kwargs):
         return iter(self.lcut(*args, **kwargs))
 
@@ -72,13 +75,13 @@ class Tokenizer(cppjiebadat):
             raise Exception("cppjieba: file does not exist: " + abs_path)
         self.dictionary = abs_path
         self.initialized = False
-    
+
     def get_dict_file(self):
         if self.dictionary == DEFAULT_DICT:
             return get_module_res(DEFAULT_DICT_NAME)
         else:
             return self.dictionary
-    
+
     def set_userdict(self, userdict_path):
         abs_path = _get_abs_path(userdict_path)
         if not os.path.isfile(abs_path):
@@ -91,18 +94,18 @@ class Tokenizer(cppjiebadat):
             self.set_userdict(userdict_path)
         else:
             raise Exception("cppjieba: the input parameter only support filepath now.")
-    
+
     def tag(self, sentence):
         self.check_initialized()
         return self._tag(sentence)
-    
+
     def _extract_tags(self, sentence, topK=20, withWeight=False):
         self.check_initialized()
         if not withWeight:
             return self._extract_tags_no_weight(sentence, topK)
         else:
             return self._extract_tags_with_weight(sentence, topK)
-    
+
     def _textrank(self,sentence, topK=20, withWeight=False):
         self.check_initialized()
         if not withWeight:
@@ -110,7 +113,7 @@ class Tokenizer(cppjiebadat):
         else:
             return self._textrank_with_weight(sentence, topK)
 
-    
+
 
 # default Tokenizer instance
 

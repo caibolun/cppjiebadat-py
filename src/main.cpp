@@ -22,12 +22,47 @@ struct Tokenizer
     cppjieba::Jieba *jieba;
     cppjieba::KeywordExtractor *keywordExtractor;
     cppjieba::TextRankExtractor *textRankExtractor;
-
+    bool keyword_needinit;
+    bool textRank_needinit;
   public:
-    
+    Tokenizer()
+    {
+        jieba = NULL;
+        keywordExtractor = NULL;
+        textRankExtractor = NULL;
+        keyword_needinit = true;
+        textRank_needinit = true;
+    }
+    ~Tokenizer()
+    {
+        release();
+    }
+    void release()
+    {
+        //cout<<"release... ..."<<endl;
+        if(jieba)
+        {
+            delete jieba;
+            jieba = NULL;
+        }
+        if(keywordExtractor)
+        {
+            delete keywordExtractor;
+            keywordExtractor = NULL;
+        }
+        if(textRankExtractor)
+        {
+            delete textRankExtractor;
+            textRankExtractor = NULL;
+        }
+    }
     void initialize(const string &main_dict, const string &hmm_path, const string &user_dict, const string &idf_path,const string &stop_word_path)
     {
+        //cout<<"init... ..."<<endl;
+        if(jieba) delete jieba;
         jieba = new cppjieba::Jieba(main_dict, hmm_path, user_dict, idf_path, stop_word_path);
+        keyword_needinit = true;
+        textRank_needinit = true;
     };
 
     vector<tuple<string, uint32_t, uint32_t>> tokenize(const string &sentence, const string &mode = "default", bool HMM = true)
@@ -96,8 +131,15 @@ struct Tokenizer
     void init_keyowrd_extractor(const string &idfPath,
                               const string &stopWordPath)
     {
-        keywordExtractor = new cppjieba::KeywordExtractor(jieba->GetDictTrie(), jieba->GetHMMModel(), idfPath, stopWordPath);
+        if (keyword_needinit)
+        {
+            //cout<<"init_keyowrd_extractor ... ..."<<endl;
+            if(keywordExtractor) delete keywordExtractor;
+            keywordExtractor = new cppjieba::KeywordExtractor(jieba->GetDictTrie(), jieba->GetHMMModel(), idfPath, stopWordPath);
+            keyword_needinit = false;
+        }
     };
+
     vector<string> extract_tags_no_weight(const string &sentence, size_t topK = 20)
     {
         vector<string> keywords;
@@ -114,7 +156,13 @@ struct Tokenizer
     //TextRankExtractor
     void init_textrank_extractor(const string &stopWordPath)
     {
-        textRankExtractor = new cppjieba::TextRankExtractor(jieba->GetDictTrie(), jieba->GetHMMModel(), stopWordPath);
+        if (textRank_needinit)
+        {
+            //cout<<"init_textrank_extractor ... ..."<<endl;
+            if(textRankExtractor) delete textRankExtractor;
+            textRankExtractor = new cppjieba::TextRankExtractor(jieba->GetDictTrie(), jieba->GetHMMModel(), stopWordPath);
+            textRank_needinit = false;
+        }
     };
     vector<string> textrank_no_weight(const string &sentence, size_t topK = 20)
     {
@@ -135,6 +183,8 @@ PYBIND11_MODULE(libcppjiebadat, m)
     m.doc() = "python extension for cppjiebadat"; // optional module docstring
 
     py::class_<Tokenizer>(m, "cppjiebadat")
+        .def(py::init<>())
+        .def("_release", &Tokenizer::release)
         .def("_initialize", &Tokenizer::initialize)
         .def("_lcut_internal", &Tokenizer::lcut_internal, py::arg("sentence"), py::arg("cut_all") = false, py::arg("HMM") = true)
         .def("_lcut_for_search_internal", &Tokenizer::lcut_for_search_internal, py::arg("sentence"), py::arg("HMM") = true)
