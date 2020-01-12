@@ -1,51 +1,48 @@
-# cppjieba-py
+# CppJiebaDAT-py
 
-cppjieba-py 是 [cppjieba](https://github.com/yanyiwu/cppjieba)的 Python 封装。
+## Introduct
 
-## 性能
+CppJiebaDAT-py is a python API for  [CppJiebaDAT](https://git.code.oa.com/byronhe/cppjiebadat), which uses [Double Array Trie (DAT)](https://github.com/s-yata/darts-clone) with mmap  to optimize memory usage of [CppJieba](https://github.com/yanyiwu/cppjieba).
 
-测试[方案](https://yanyiwu.com/work/2015/06/14/jieba-series-performance-test.html)：先按行读取文本围城到一个数组里，然后循环对围城每行文字作为一个句子进行分词。因为只对围城这本书分词一遍太快了，容易误差。 所以循环对围城这本书分词50次。基本上每次分词耗时都很稳定。 分词算法都是采用【精确模式】。
+## Feature
+#### Double array trie
+CppJiebaDAT-py using [Double Array Triev](https://github.com/s-yata/darts-clone) with mmap to share dictionay memory (24MB mmap).
 
-| 方案        | 速度             |
-| ------------- |:-------------:|
-| cppjieba-py      | 8s  |
-| jieba      | 77s    |
-
-
-## 使用
-
-下面是一个使用 cppjieba-py 进行分词的例子
-
-```python
-# -*- coding: utf-8 -*-
-from cppjieba_py import jieba 
-
-jieba_instance = jieba("cppjieba/dict/user.dict.utf8")
-seg_list = jieba_instance.cut("我来到北京清华大学")
-print("Full Mode: " + "/ ".join(seg_list))  # 全模式
+#### Default dictionary
+A default dictionary with `utf8` coding（）is package in the python libaray. Users can specify their own custom dictionary into the default dictionary to ensure a higher accuracy.
 
 
-seg_list = jieba_instance.cut("他来到了网易杭研大厦")  # 默认是精确模式
-print(", ".join(seg_list))
-
-seg_list = jieba_instance.cut_for_search(
-    "小明硕士毕业于中国科学院计算所，后在日本京都大学深造")  # 搜索引擎模式
-print(", ".join(seg_list))
-    
+#### Delay initialization
+By default, CppJiebaDAT-py don't build the prefix dictionary unless it's necessary. After initialization, CppJiebaDAT-py is not initialized again. If you want to initialize it manually, you can call:
+```
+import cppjiebadat_py as jieba
+jieba.initialize()
 ```
 
-## 安装
+## Usage
+#### Dependencies
++ `g++ (version >= 4.1 is recommended) or clang++`;
++ `cmake (version >= 2.6 is recommended)`;
 
-* 从源代码安装
+#### Compile
+```
+git clone http://git.code.oa.com/mmbizcv/cppjiebadat-py.git
+python setup.py build
+python setup.py install
+```
 
-	```
-	$ git clone --recursive https://github.com/fantasy/cppjieba-py
-	$ python setup.py build 
-	$ python setup.py install 
-	```
+#### Demo ([example.py](https://git.code.oa.com/mmbizcv/cppjiebadat-py/blob/master/example.py))
+The most usable interfaces are same to [jieba](https://github.com/fxsjy/jieba).
+```
+try:
+    import cppjiebadat_py as jieba
+    import cppjiebadat_py.posseg as pseg
+    import cppjiebadat_py.analyse as analyse
+except:
+    import jieba
+    import jieba.posseg as pseg
+    import jieba.analyse as analyse
+```
 
-* 线上机器安装
-
-以mmbizwxaimagelogic为例：
-
-LDSHARED="gcc -pthread -shared -B /home/qspace/data/mmbizwxaimagelogic/bkrpc_env/miniconda3/compiler_compat -L/home/qspace/data/mmbizwxaimagelogic/bkrpc_env/miniconda3/lib -Wl,-rpath=/home/qspace/data/mmbizwxaimagelogic/bkrpc_env/miniconda3/lib -Wl,--no-as-needed" python setup.py build
+## Concat
+Please contact ArlenCai (arlencai@tencent.com)
