@@ -9,7 +9,7 @@ CppJiebaDAT-py is a python API for  [CppJiebaDAT](https://git.code.oa.com/byronh
 CppJiebaDAT-py using [Double Array Triev](https://github.com/s-yata/darts-clone) with mmap to share dictionay memory (24MB mmap).
 
 #### Default dictionary
-A default dictionary with `utf8` coding（）is package in the python libaray. Users can specify their own custom dictionary into the default dictionary to ensure a higher accuracy.
+A default dictionary with `utf8` coding（[jieba.dict.utf8]（https://git.code.oa.com/mmbizcv/cppjiebadat-py/blob/master/cppjiebadat_py/dict/jieba.dict.utf8））is package in the python libaray. Users can specify their own custom dictionary into the default dictionary to ensure a higher accuracy.
 
 
 #### Delay initialization
